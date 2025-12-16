@@ -9,7 +9,7 @@ import streamlit as st
 import pandas as pd
 from recommender.scorer import SHLRecommender
 
-DATA_PATH = "data/processed/assessments_clean.json"
+DATA_PATH = "data/processed/assessments.json"
 
 st.set_page_config(page_title="SHL Assessment Recommender", layout="centered")
 

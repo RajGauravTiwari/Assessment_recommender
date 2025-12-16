@@ -4,4 +4,6 @@ streamlit
 pandas
 numpy
 scikit-learn
-nltk
+sentence-transformers
+faiss-cpu
+tqdm

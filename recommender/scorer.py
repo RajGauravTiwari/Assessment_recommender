@@ -1,52 +1,64 @@
 import json
 import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+import faiss
+from sentence_transformers import SentenceTransformer
 
 
 class SHLRecommender:
-    def __init__(self, data_path: str):
-        # Load parsed assessment data
-        with open(data_path, "r", encoding="utf-8") as f:
-            self.assessments = json.load(f)
+    """
+    SHL Assessment Recommender using precomputed Sentence Transformer embeddings + FAISS
+    """
 
-        # Prepare corpus
-        self.descriptions = [
-            item["description"] for item in self.assessments
-        ]
+    def __init__(self, json_path: str):
+        # -------------------------
+        # Load assessment metadata
+        # -------------------------
+        with open(json_path, "r", encoding="utf-8") as f:
+            self.data = json.load(f)
 
-        # Initialize TF-IDF vectorizer
-        self.vectorizer = TfidfVectorizer(
-            stop_words="english",
-            max_features=5000,
-            ngram_range=(1, 2)
-        )
+        # -------------------------
+        # Load precomputed embeddings
+        # -------------------------
+        self.embeddings = np.load(
+            "data/processed/assessment_embeddings.npy"
+        ).astype("float32")
 
-        # Fit TF-IDF on assessment descriptions
-        self.tfidf_matrix = self.vectorizer.fit_transform(self.descriptions)
+        # -------------------------
+        # Load embedding model (query only)
+        # -------------------------
+        self.model = SentenceTransformer("all-mpnet-base-v2")
 
-    def recommend(self, query: str, top_k: int = 10):
-        """
-        Recommend top_k assessments based on cosine similarity.
-        """
-        if not query.strip():
+        # -------------------------
+        # Build FAISS index
+        # -------------------------
+        dim = self.embeddings.shape[1]
+        self.index = faiss.IndexFlatIP(dim)
+        self.index.add(self.embeddings)
+
+    def recommend(self, query: str, top_k: int = 5):
+        if not query or not query.strip():
             return []
 
-        # Vectorize query
-        query_vector = self.vectorizer.transform([query])
+        # -------------------------
+        # Encode query ONLY
+        # -------------------------
+        query_embedding = self.model.encode(
+            [query],
+            normalize_embeddings=True
+        ).astype("float32")
 
-        # Compute cosine similarity
-        similarities = cosine_similarity(query_vector, self.tfidf_matrix)[0]
-
-        # Get top-k indices
-        top_indices = np.argsort(similarities)[::-1][:top_k]
+        # -------------------------
+        # Search FAISS index
+        # -------------------------
+        scores, indices = self.index.search(query_embedding, top_k)
 
         results = []
-        for idx in top_indices:
+        for idx, score in zip(indices[0], scores[0]):
+            item = self.data[idx]
             results.append({
-                "assessment_name": self.assessments[idx]["assessment_name"],
-                "url": self.assessments[idx]["url"],
-                "score": float(similarities[idx])
+                "assessment_name": item["assessment_name"],
+                "url": item["url"],
+                "score": float(score)
             })
 
         return results
