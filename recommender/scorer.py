@@ -2,6 +2,7 @@ import json
 import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
+from recommender.utils import clean_description
 
 
 class SHLRecommender:
@@ -56,9 +57,14 @@ class SHLRecommender:
         for idx, score in zip(indices[0], scores[0]):
             item = self.data[idx]
             results.append({
-                "assessment_name": item["assessment_name"],
-                "url": item["url"],
-                "score": float(score)
+            "assessment_name": item["assessment_name"],
+            "url": item["url"],
+            "description": clean_description(item.get("description", "")),            "duration": item.get("duration", None),
+            "remote_support": item.get("remote_support", "Yes"),
+            "adaptive_support": item.get("adaptive_support", "No"),
+            "test_type": item.get("test_type", []),
+            "score": float(score)
             })
+
 
         return results

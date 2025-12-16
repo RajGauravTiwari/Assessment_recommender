@@ -7,3 +7,6 @@ scikit-learn
 sentence-transformers
 faiss-cpu
 tqdm
+fastapi
+uvicorn
+
