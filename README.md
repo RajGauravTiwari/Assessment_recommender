@@ -201,6 +201,10 @@ The system is designed for evaluation using standard information retrieval metri
 ```
 shl-assessment-recommender/
 │
+|── api/
+│   └── main.py
+│       # API Endpoints.
+|
 ├── app/
 │   └── streamlit_app.py
 │       # Streamlit UI: takes user query, calls recommender, displays Top-5/10 results
